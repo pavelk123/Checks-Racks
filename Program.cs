@@ -46,10 +46,10 @@ app.UseSpa(spa =>
 
 int x = 1;
 
-app.Run(async (context) =>
-{
-    x += 1;
-    await context.Response.WriteAsync($"value: {x}");
-});
+//app.Run(async (context) =>
+//{
+//    x += 1;
+//    await context.Response.WriteAsync($"value: {x}");
+//});
 
 app.Run();
