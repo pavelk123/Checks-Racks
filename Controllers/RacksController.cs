@@ -13,22 +13,22 @@ namespace Checks_Racks.Controllers
     public class RacksController : ControllerBase
     {
         private IHttpClientFactory _clientFactory;
-        private readonly ILogger<RacksModel> _logger;
+        private readonly ILogger<LineInput> _logger;
 
-        public RacksController(IHttpClientFactory clientFactory, ILogger<RacksModel> logger)
+        public RacksController(IHttpClientFactory clientFactory, ILogger<LineInput> logger)
         {
             _clientFactory = clientFactory;
             _logger = logger;
         }
 
-        public IEnumerable<RacksModel>? Racks { get; set; }
+        public IEnumerable<LineInput>? Racks { get; set; }
 
         [HttpGet(Name = "Racks")]
         public async Task Get()
         {
             var httpRequestMessage = new HttpRequestMessage(
                 HttpMethod.Get,
-                "https://api.github.com/repos/dotnet/AspNetCore.Docs/branches");
+                "https://appspet.jti.com/lineservice/Lines");
 
             var httpClient = _clientFactory.CreateClient();
             var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
@@ -39,11 +39,16 @@ namespace Checks_Racks.Controllers
                     await httpResponseMessage.Content.ReadAsStreamAsync();
 
                 Racks = await JsonSerializer.DeserializeAsync
-                    <IEnumerable<RacksModel>>(contentStream);
-
+                    <IEnumerable<LineInput>>(contentStream);
             }
 
-
         }
+    }
+
+     public class LineInput
+    {
+        public int Id { get;set; }
+        public string Name { get; set; }
+        public IEnumerable<string> Computers { get; set; }
     }
 }
