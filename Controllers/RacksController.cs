@@ -21,27 +21,50 @@ namespace Checks_Racks.Controllers
             _logger = logger;
         }
 
-        public IEnumerable<LineInput>? Racks { get; set; }
+        public IEnumerable<LineInput> Racks { get; set; }
 
         [HttpGet(Name = "Racks")]
-        public async Task Get()
+        //public async Task Get()
+        //{
+        //    var httpRequestMessage = new HttpRequestMessage(
+        //        HttpMethod.Get,
+        //        "https://appspet.jti.com/lineservice/Lines");
+
+        //    var httpClient = _clientFactory.CreateClient();
+        //    var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+
+        //    if (httpResponseMessage.IsSuccessStatusCode)
+        //    {
+        //        using var contentStream =
+        //            await httpResponseMessage.Content.ReadAsStreamAsync();
+
+        //        Racks = await JsonSerializer.DeserializeAsync
+        //            <IEnumerable<LineInput>>(contentStream);
+
+        //        Console.WriteLine(Racks);
+        //    }
+
+        //}
+
+        public IEnumerable<LineInput> Get()
         {
             var httpRequestMessage = new HttpRequestMessage(
                 HttpMethod.Get,
                 "https://appspet.jti.com/lineservice/Lines");
 
             var httpClient = _clientFactory.CreateClient();
-            var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+            var httpResponseMessage = httpClient.Send(httpRequestMessage);
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
-                using var contentStream =
-                    await httpResponseMessage.Content.ReadAsStreamAsync();
+                var contentStream = httpResponseMessage.Content.ReadAsStream();
 
-                Racks = await JsonSerializer.DeserializeAsync
+                Racks = JsonSerializer.Deserialize
                     <IEnumerable<LineInput>>(contentStream);
-            }
 
+                return Racks;
+            }
+            else return null;
         }
     }
 
