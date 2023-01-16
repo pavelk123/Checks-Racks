@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Checks_Racks.HttpClient;
+using Checks_Racks.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Microsoft.VisualBasic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace Checks_Racks.Controllers
 {
@@ -12,66 +15,53 @@ namespace Checks_Racks.Controllers
     [ApiController]
     public class RacksController : ControllerBase
     {
-        private IHttpClientFactory _clientFactory;
-        private readonly ILogger<LineInput> _logger;
+        private LineClient _clientFactory;
+        private ILogger<RacksController> _logger;
+        private ApplicationContext _db;
 
-        public RacksController(IHttpClientFactory clientFactory, ILogger<LineInput> logger)
+        public RacksController(LineClient clientFactory, ILogger<RacksController> logger, ApplicationContext db)
         {
-            _clientFactory = clientFactory;
+            _clientFactory= clientFactory;
             _logger = logger;
+            _db = db;
         }
 
-        public IEnumerable<LineInput> Racks { get; set; }
+        public List<LineInput> Lines { get; set; }
 
-        [HttpGet(Name = "Racks")]
-        //public async Task Get()
-        //{
-        //    var httpRequestMessage = new HttpRequestMessage(
-        //        HttpMethod.Get,
-        //        "https://appspet.jti.com/lineservice/Lines");
-
-        //    var httpClient = _clientFactory.CreateClient();
-        //    var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-
-        //    if (httpResponseMessage.IsSuccessStatusCode)
-        //    {
-        //        using var contentStream =
-        //            await httpResponseMessage.Content.ReadAsStreamAsync();
-
-        //        Racks = await JsonSerializer.DeserializeAsync
-        //            <IEnumerable<LineInput>>(contentStream);
-
-        //        Console.WriteLine(Racks);
-        //    }
-
-        //}
-
-        public IEnumerable<LineInput> Get()
+        [HttpGet(Name = "racks")]
+        public async Task<List<Line>> Get()
         {
-            var httpRequestMessage = new HttpRequestMessage(
-                HttpMethod.Get,
-                "https://appspet.jti.com/lineservice/Lines");
+            var dataFromApi =  await _clientFactory.GetLinesFromApi();
 
-            var httpClient = _clientFactory.CreateClient();
-            var httpResponseMessage = httpClient.Send(httpRequestMessage);
-
-            if (httpResponseMessage.IsSuccessStatusCode)
+            foreach(var lineFromApi in dataFromApi)
             {
-                var contentStream = httpResponseMessage.Content.ReadAsStream();
+                var line = new Line { ApiId = lineFromApi.Id, Name = lineFromApi.Name, Computers = new List<Computer> { } };
 
-                Racks = JsonSerializer.Deserialize
-                    <IEnumerable<LineInput>>(contentStream);
+                //bool isExistsLine = await _db.Lines.AnyAsync(lineInDb => lineInDb.Name == line.Name);
 
-                return Racks;
+                //if (isExistsLine) _db.Lines.Update(line);
+                //else _db.Lines.Add(line);
+
+                if (lineFromApi.Computers.Count != 0)
+                {
+                    foreach (var computerFromApi in lineFromApi.Computers)
+                    {
+                        //bool isExistComputer = await _db.Computers.AnyAsync(computerInDb => computerInDb.Title == computer.Title);
+                        var computer = new Computer { Name = computerFromApi};
+                        line.Computers.Add(computer);
+                        _db.AddOrUpdate(_db, computer);
+                    }
+                }
+
+                _db.AddOrUpdate(_db, line);
             }
-            else return null;
+
+             _db.SaveChanges();
+
+            var data = _db.Lines.ToList();
+
+            return data;
         }
     }
 
-     public class LineInput
-    {
-        public int Id { get;set; }
-        public string Name { get; set; }
-        public IEnumerable<string> Computers { get; set; }
-    }
 }
